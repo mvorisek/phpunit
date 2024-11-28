@@ -30,6 +30,8 @@ use function array_values;
 use function debug_backtrace;
 use function defined;
 use function error_reporting;
+use function ini_get;
+use function ini_set;
 use function restore_error_handler;
 use function set_error_handler;
 use function sprintf;
@@ -57,6 +59,7 @@ final class ErrorHandler
     private ?Baseline $baseline               = null;
     private bool $enabled                     = false;
     private ?int $originalErrorReportingLevel = null;
+    private ?int $originalAssertLevel         = null;
     private readonly Source $source;
     private readonly SourceFilter $sourceFilter;
 
@@ -213,10 +216,14 @@ final class ErrorHandler
             return;
         }
 
-        $this->enabled                     = true;
         $this->originalErrorReportingLevel = error_reporting();
+        $this->originalAssertLevel         = (int) ini_get('zend.assertions');
 
         error_reporting($this->originalErrorReportingLevel & self::UNHANDLEABLE_LEVELS);
+
+        ini_set('zend.assertions', 1);
+
+        $this->enabled = true;
     }
 
     public function disable(): void
@@ -229,8 +236,11 @@ final class ErrorHandler
 
         error_reporting(error_reporting() | $this->originalErrorReportingLevel);
 
+        ini_set('zend.assertions', $this->originalAssertLevel);
+
         $this->enabled                     = false;
         $this->originalErrorReportingLevel = null;
+        $this->originalAssertLevel         = null;
     }
 
     public function useBaseline(Baseline $baseline): void
