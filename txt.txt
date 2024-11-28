@@ -1,0 +1,11 @@
+Native `assert` assertion are used a lot. They are becoming even more popular together with static analysers to eliminate cases that should not happen.
+
+However `assert` evaluation is disabled on many systems as it is default php.ini for production [1]. Production php.ini is default in official Docker images [2] and even popular Github Actions `setup-php` [3]. This leads to `assert` assertions very often untested as most, at least CI environments, does not have them enabled.
+
+This PR enables `assert` evaluation before any test. If a test, for some ugly reasons, requires `assert` disabled, user can simply override the php.ini in code in given test.
+
+fix #3146, fix #1897
+
+[1] https://www.php.net/manual/en/function.assert.php
+[2] https://github.com/docker-library/php
+[3] https://github.com/shivammathur/setup-php?tab=readme-ov-file#ini-file-optional
