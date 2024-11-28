@@ -25,6 +25,8 @@ use function explode;
 use function getcwd;
 use function implode;
 use function in_array;
+use function ini_get;
+use function ini_set;
 use function is_array;
 use function is_callable;
 use function is_int;
@@ -166,13 +168,13 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
      */
     private array $mockObjects = [];
     private TestStatus $status;
-    private int $numberOfAssertionsPerformed = 0;
-    private mixed $testResult                = null;
-    private string $output                   = '';
-    private ?string $outputExpectedRegex     = null;
-    private ?string $outputExpectedString    = null;
-    private bool $outputBufferingActive      = false;
-    private int $outputBufferingLevel;
+    private int $numberOfAssertionsPerformed  = 0;
+    private mixed $testResult                 = null;
+    private ?int $originalZendAssertions      = null;
+    private string $output                    = '';
+    private ?string $outputExpectedRegex      = null;
+    private ?string $outputExpectedString     = null;
+    private ?int $outputBufferingLevel        = null;
     private bool $outputRetrievedForAssertion = false;
     private bool $doesNotPerformAssertions    = false;
 
@@ -410,7 +412,7 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
      */
     final public function output(): string
     {
-        if (!$this->outputBufferingActive) {
+        if ($this->outputBufferingLevel === null) {
             return $this->output;
         }
 
@@ -451,6 +453,7 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
 
         $this->snapshotGlobalState();
         $this->snapshotGlobalErrorExceptionHandlers();
+        $this->enableZendAssertions();
         $this->startOutputBuffering();
 
         $hookMethods                       = (new HookMethods)->hookMethods(static::class);
@@ -610,6 +613,8 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
         if (!$outputBufferingStopped) {
             $this->stopOutputBuffering();
         }
+
+        $this->restoreZendAssertions();
 
         clearstatcache();
 
@@ -1434,12 +1439,25 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
         $this->status = TestStatus::skipped($message);
     }
 
+    private function enableZendAssertions(): void
+    {
+        $this->originalZendAssertions = (int) ini_get('zend.assertions');
+
+        ini_set('zend.assertions', 1);
+    }
+
+    private function restoreZendAssertions(): void
+    {
+        ini_set('zend.assertions', $this->originalZendAssertions);
+
+        $this->originalZendAssertions = null;
+    }
+
     private function startOutputBuffering(): void
     {
         ob_start();
 
-        $this->outputBufferingActive = true;
-        $this->outputBufferingLevel  = ob_get_level();
+        $this->outputBufferingLevel = ob_get_level();
     }
 
     private function stopOutputBuffering(): bool
@@ -1469,8 +1487,7 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
 
         $this->output = ob_get_clean();
 
-        $this->outputBufferingActive = false;
-        $this->outputBufferingLevel  = ob_get_level();
+        $this->outputBufferingLevel = null;
 
         return true;
     }
