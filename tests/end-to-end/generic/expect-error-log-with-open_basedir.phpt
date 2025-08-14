@@ -5,6 +5,13 @@ https://github.com/sebastianbergmann/phpunit/issues/6197
 $_SERVER['argv'][] = '--do-not-cache-result';
 $_SERVER['argv'][] = '--no-configuration';
 $_SERVER['argv'][] = '--debug';
+$_SERVER['argv'][] = '--fail-on-notice';
+$_SERVER['argv'][] = '--fail-on-deprecation';
+$_SERVER['argv'][] = '--display-notices';
+$_SERVER['argv'][] = '--display-deprecations';
+$_SERVER['argv'][] = '--display-phpunit-deprecations';
+$_SERVER['argv'][] = '--display-warnings';
+$_SERVER['argv'][] = '--display-errors';
 $_SERVER['argv'][] = __DIR__ . '/_files/ExpectErrorLogTest.php';
 
 ini_set('open_basedir', (ini_get('open_basedir') ? ini_get('open_basedir') . PATH_SEPARATOR : '') . dirname(__DIR__, 3));
